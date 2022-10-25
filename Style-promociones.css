@@ -1,0 +1,120 @@
+*{
+    margin: 0;
+    padding: 0; 
+    font-family: 'Raleway', sans-serif;;  
+}
+.logo{
+    width: 100px;
+    border-radius: 50%;
+    box-shadow: 10px 5px 5px black;
+    
+}
+.fondo{
+    min-height: 200vh;
+    width: 100%;
+    background-color: rgba(0, 0, 0, 0.762);
+    background-position: center;
+    background-size: cover;
+    position: relative;
+
+}
+nav{
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: rgb(128, 0, 128);
+    box-shadow: 1px 10px 5px rgba(0, 0, 0, 0.721);
+}
+.menu{
+    flex: 1;
+    text-align: right;
+    
+}
+.menu ul li{
+    list-style: none;
+    display: inline-block;
+    padding: 10px 25px;
+    position: relative;
+}
+.menu ul li a{
+    color: aliceblue;
+    text-decoration: none;
+    font-size: 20px;
+    font-weight: 500;
+}
+.menu ul li ::after{
+    content: '';
+    width: 0%;
+    height: 3px;
+    background-color: aliceblue;
+    display: block;
+    margin: auto;
+    transition: 0.5s;
+}
+.menu ul li :hover::after{
+    width: 100%;
+}
+.container{
+    display: grid;
+    grid-template-columns: repeat(2,1fr);
+    grid-auto-rows: 400px;
+    padding-left: 50px;
+    padding-right: 50px;
+    grid-gap: 20px;
+    row-gap: 200px;
+}
+.imagen1{
+    width: 100%;
+    height: 100%;
+    text-align: center;
+    object-fit: cover;
+    grid-row: 1;
+    grid-column: 1;
+}
+.text1{
+    grid-row: 1;
+    grid-column: 2;
+    
+}
+.text2{
+    grid-row: 2;
+    grid-column: 1;
+    
+}
+.imagen2{
+    width: 100%;
+    height: 100%;
+    text-align: center;
+    object-fit: cover;
+    grid-row: 2;
+    grid-column: 2;
+}
+ h1{
+    color: aliceblue;
+    text-align: center;
+    font-style: italic;
+    font-size: 62px;
+    padding: 25px;
+    margin-bottom: 40px;
+}
+h2{
+    color: aliceblue;
+    text-align: center;
+    font-size: 45px;
+}
+ p{
+    color: aliceblue;
+    font-size: 30px;
+    text-align: center; 
+}
+footer{
+    background-color: rgba(128, 0, 128);
+
+}
+footer h5{
+    color: aliceblue;
+    text-align: center;
+    font-size: 10px;
+}
+
+
