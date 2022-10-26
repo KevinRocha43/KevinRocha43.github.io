@@ -1,15 +1,15 @@
-*{
+*{ /*Para todo nuestro html,cambiamos la fuente y eleminamos el margin y padding por default*/
     margin: 0;
     padding: 0; 
     font-family: 'Raleway', sans-serif;;  
 }
-.logo{
+.logo{ /*Con esta clase de dimos forma al logo de la barra de navegacion, agregamos una sombra y lo redondeamos*/
     width: 100px;
     border-radius: 50%;
     box-shadow: 10px 5px 5px black;
     
 }
-.fondo{
+.fondo{ /*Con esta clase le dimos un background a la seccion con una imagen y definimos el tamaño*/
     min-height: 130vh;
     width: 100%;
     background-image: linear-gradient(rgba(128, 0, 128, 0.108),rgba(128, 0, 128, 0.108)), url(images/fondo3.jpg);
@@ -18,31 +18,33 @@
     position: relative;
 
 }
-nav{
+nav{ /*Modificamos la etiqueta nav para darle un background de color magenta y un box shadow,
+      utilizamos lo minimo de flexbox para alinear (Este es el contenedor)*/
     display: flex;
     justify-content: space-between;
     align-items: center;
     background-color: rgb(128, 0, 128);
     box-shadow: 1px 10px 5px rgba(0, 0, 0, 0.721);
 }
-.menu{
+.menu{/*Esta clase es el div en el que se colocaron la lista de navegacion*/
     flex: 1;
     text-align: right;
     
 }
-.menu ul li{
+.menu ul li{ /*con list-style retiramos los puntos, y con inline-block que permite respetar el padding*/
     list-style: none;
     display: inline-block;
     padding: 10px 25px;
     position: relative;
 }
-.menu ul li a{
+.menu ul li a{ /*Cambiamos el estilo del texto y color de las estiquetas a*/
     color: aliceblue;
     text-decoration: none;
     font-size: 20px;
     font-weight: 500;
 }
-.menu ul li ::after{
+.menu ul li ::after{ /*La dos siguientes se utilizan para darle una pequeña animacion 
+    cuando el cursor se coloca en algun elemento de la lista*/
     content: '';
     width: 0%;
     height: 3px;
@@ -54,7 +56,7 @@ nav{
 .menu ul li :hover::after{
     width: 100%;
 }
-.text-W{
+.text-W{ /*Damos color y posicion a los textos*/
     width: 100%;
     color: aliceblue;
     position: absolute;
@@ -62,7 +64,7 @@ nav{
     text-align: center;
     
 }
-.text-W h1{
+.text-W h1{ /*Cambiamos tamaño,estilo y grosor del h1 y de p*/
     font-size: 62px;
     font-style: italic;
     font-weight: bold;
@@ -71,7 +73,7 @@ nav{
     font-size: 25px;
     font-weight: 600;
 }
-.map{
+.map{ /*Arreglamos la posicion del google maps*/
     position: absolute;
     top: 50%;
     width: 100%;
@@ -83,6 +85,7 @@ nav{
     border: 20px; 
     border-color: black;
 }
+/*Agregamos al footer background y le damos color y posicion al h5*/
 footer{
     background-color: rgba(128, 0, 128);
 

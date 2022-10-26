@@ -1,4 +1,4 @@
-*{
+*{ /*El estilo se mantiene con algunas excepciones*/
     margin: 0;
     padding: 0; 
     font-family: 'Raleway', sans-serif;;  
@@ -12,7 +12,7 @@
 .fondo{
     min-height: 200vh;
     width: 100%;
-    background-color: rgba(0, 0, 0, 0.762);
+    background-color: rgba(0, 0, 0, 0.762); /*Cambiamos el background por un color solido*/
     background-position: center;
     background-size: cover;
     position: relative;
@@ -54,6 +54,8 @@ nav{
 .menu ul li :hover::after{
     width: 100%;
 }
+
+
 .container{
     display: grid;
     grid-template-columns: repeat(2,1fr);
@@ -107,7 +109,7 @@ h2{
     font-size: 30px;
     text-align: center; 
 }
-footer{
+footer{ /*Agregamos al footer background y le damos color y posicion al h5*/
     background-color: rgba(128, 0, 128);
 
 }

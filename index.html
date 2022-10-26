@@ -1,7 +1,10 @@
 <!DOCTYPE html>
+
 <head>
     <meta name="keywords" content="Vinos,Zocalo,Mercado Independencia">
     <title>entreTINTOS</title>
+    <!--Dentro de head se colocan los links, el primero da al archivo css, el segundo para cambiar el icono de la ventana y el tercero
+    es la liga de una Google Font-->  
     <link rel="stylesheet" href="Style.css">
     <link rel="shorcut icon" href="images/icon.jpg">
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -9,19 +12,21 @@
 <link href="https://fonts.googleapis.com/css2?family=Raleway:wght@100;200;300&display=swap" rel="stylesheet">
 </head>
 <body >
-    
+    <!--Iniciamos con una seccion con la clase fondo donde se contendran otros elementos-->
         <section class="fondo">
+            <!--La etiqueta Nav, sirve para identificar la barra de navegacion, contiene el logo y una lista con las otras partes de la pagina-->
         <nav>
-           <a href="Firstpage.html"><img class="logo" src="images/icon.jpg" ></a>
+           <a href="index.html"><img class="logo" src="images/icon.jpg" ></a>
            <div class="menu">
                 <ul>
-                    <li><a href="Firstpage.html">INICIO</a></li>
+                    <li><a href="index.html">INICIO</a></li>
                     <li><a href="menu.html">MENÚ</a></li>
                     <li><a href="galeria.html">GALERÍA</a></li>
                     <li><a href="promociones.html">PROMOCIONES</a></li>
                 </ul>
            </div>
         </nav>
+        <!--En este div lo unico que contiene es un breve texto que na la bienvenida a la página-->
         <div class="text-W">
             <h1>¡Bienvenidos!</h1>
             <p>
@@ -30,6 +35,8 @@
             <br> <br>
             <h2 style="color: white;  font-size: 45px; font-style: italic;"><strong>Ubicación</strong> </h2>
         </div>
+        <!--Este div se uso para colocar un mapa con la localización exacta del restaurante (investigue como hacerlo 
+            y google te lo proporciona ya en forma de html)-->
         <div class="map">
             <iframe  src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3762.51921999378!2d-99.14646654979906!3d19.433168345634453!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x85d1f92ab5f1f9c1%3A0xb98d0972564011a2!2sMercado%20Independencia!5e0!3m2!1ses!2smx!4v1665784251261!5m2!1ses!2smx" 
             width="600" height="400" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"> </iframe>
