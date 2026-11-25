@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Pvn · Plantillas de incidentes SOC</title>
+<style>
+:root{--bg:#eaf4fb;--surface:#fff;--text:#1b2733;--muted:#5b6b7a;--line:#cfdbe5;--accent:#00a8e0;--head:#81f499;--foot:#508aa8;--ph:#fff3c4;--phtext:#7a5b00;--ok:#1e8e4e;--bad:#c0392b;color-scheme:light;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font-family:Arial,Helvetica,sans-serif;font-size:15px}
+header{background:var(--head);padding:12px 16px;display:flex;gap:12px;align-items:center;flex-wrap:wrap;justify-content:space-between}
+header h1{margin:0;font-size:20px}
+main{display:grid;grid-template-columns:minmax(280px,400px) 1fr;gap:16px;padding:16px;max-width:1350px;margin:auto}
+@media(max-width:860px){main{grid-template-columns:1fr}}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:14px;min-width:0}
+.fgrid{display:grid;grid-template-columns:1fr 1fr;gap:0 8px}
+label{display:block;font-size:12px;color:var(--muted);margin:10px 0 3px}
+input,select,button{font:inherit;color:var(--text);background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:7px 9px;width:100%}
+button{width:auto;cursor:pointer;background:var(--accent);color:#fff;border-color:var(--accent)}
+button.sec{background:transparent;color:var(--text);border-color:var(--line)}
+button.mini{padding:3px 10px;font-size:12px}
+.row{display:flex;gap:8px;align-items:flex-end}
+.out h2{font-size:16px;margin:18px 0 6px;display:flex;justify-content:space-between;align-items:center;gap:8px}
+.out h2:first-child{margin-top:0}
+.out h2.md{border-bottom:2px solid var(--accent);padding-bottom:3px}
+.box{border:1px dashed var(--line);border-radius:6px;padding:10px;line-height:1.5}
+.box p{margin:0 0 .6em}.box p:last-child{margin:0}.box ul{margin:.3em 0}
+.ph{background:var(--ph);color:var(--phtext);padding:0 3px;border-radius:3px}
+table.mail{border-collapse:collapse;border:2px solid #000;text-align:center;width:100%;color:#000;background:#fff}
+table.mail th{background:#00a8e0;color:#fff;border:2px solid #000;padding:5px}
+table.mail td{border:2px solid #000;padding:5px}
+.mailwrap{overflow-x:auto;color:#000;background:#fff;padding:10px;border-radius:6px;font-family:Arial,sans-serif}
+.mailwrap .ph{background:#fff3c4;color:#7a5b00}
+.sec-h{display:flex;justify-content:space-between;align-items:center;margin-top:10px}
+.sec-h h3{margin:0;font-size:14px}
+.banner{border-left:4px solid var(--bad);background:var(--ph);padding:8px 10px;margin:8px 0;border-radius:4px}
+.hint{color:var(--muted);font-size:12px;margin:4px 0 0}
+footer{background:var(--foot);color:#fff;padding:14px 16px;margin-top:8px}
+footer input{background:var(--surface);max-width:200px}
+footer .row{flex-wrap:wrap}footer label{color:#dbe8f0}
+.toast{position:fixed;bottom:calc(16px + env(safe-area-inset-bottom,0px));right:16px;background:#222;color:#fff;padding:8px 14px;border-radius:6px;opacity:0;transition:.2s;pointer-events:none}
+.toast.on{opacity:1}
+</style>
+</head>
+<body>
+<header>
+  <h1>Plantillas de incidentes SOC</h1>
+  <div class="row" style="width:auto">
+    <div><label style="margin:0;color:inherit">Alerta a atender</label><select id="tpl"></select></div>
+    <div><label style="margin:0;color:inherit">Saludo</label>
+      <select id="greet"><option>Buenos días</option><option>Buenas tardes</option><option>Buenas noches</option></select></div>
+  </div>
+</header>
+<main>
+  <section class="card"><div class="fgrid" id="form"></div>
+    <p class="hint">En campos de IP y host se quitan automáticamente los [ ] (192[.]168[.]2[.]1 → 192.168.2.1).</p>
+    <div class="row" style="margin-top:12px"><button class="sec" id="clear">Borrar datos</button></div>
+  </section>
+  <section class="card out" id="out"></section>
+</main>
+<footer>
+  <strong>Generador de títulos</strong>
+  <div class="row">
+    <div><label>Alerta</label><input id="g_a"></div>
+    <div><label>User</label><input id="g_u"></div>
+    <div><label>IP</label><input id="g_i" data-defang></div>
+  </div>
+  <p>Alerta + user + IP: <code id="g1"></code> <button class="mini" data-cp="g1">Copiar</button></p>
+  <p>Alerta + user: <code id="g2"></code> <button class="mini" data-cp="g2">Copiar</button></p>
+</footer>
+<div class="toast" id="toast">Copiado</div>
+
+<script>
+/* ================= utilidades ================= */
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const store = {
+  get(k, d){ try { const r = localStorage.getItem(k); return r ? JSON.parse(r) : d; } catch { return d; } },
+  set(k, v){ try { localStorage.setItem(k, JSON.stringify(v)); } catch {} }
+};
+const toast = t => { const e = $('#toast'); e.textContent = t; e.classList.add('on'); setTimeout(() => e.classList.remove('on'), 1200); };
+const defang = s => s.replace(/[\[\]]/g, '');           // 192[.]168[.]2[.]1 -> 192.168.2.1
+const SEN = /\u0001(.*?)\u0002/g;                        // marcas de "campo vacío"
+const plain = s => s.replace(SEN, '[$1]');               // para copiar
+const phHtml = s => s.replace(SEN, (m, p) => `<span class="ph">[${p}]</span>`);
+
+// {{clave}} o {{clave|texto si vacío}}
+function fill(t, v, escape){
+  return t.replace(/\{\{(\w+)(?:\|([^}]*))?\}\}/g, (m, k, ph) => {
+    const x = (v[k] || '').trim();
+    return x ? (escape ? esc(x) : x) : `\u0001${ph || k}\u0002`;
+  });
+}
+
+async function copyText(text){
+  try { await navigator.clipboard.writeText(text); }
+  catch { const t = document.createElement('textarea'); t.value = text; document.body.appendChild(t); t.select(); document.execCommand('copy'); t.remove(); }
+  toast('Copiado');
+}
+async function copyHtml(el){   // correo: HTML con formato + texto plano
+  const html = el.innerHTML, text = el.innerText;
+  try { await navigator.clipboard.write([new ClipboardItem({'text/html': new Blob([html], {type:'text/html'}), 'text/plain': new Blob([text], {type:'text/plain'})})]); toast('Copiado'); }
+  catch { const r = document.createRange(); r.selectNodeContents(el); const s = getSelection(); s.removeAllRanges(); s.addRange(r); const ok = document.execCommand('copy'); s.removeAllRanges(); toast(ok ? 'Copiado' : 'No se pudo copiar'); }
+}
+
+/* Copia solo la tabla del correo como imagen PNG (sin librerías, funciona sin internet) */
+async function copyImage(el){
+  const tb = el.querySelector('table'); if (!tb) return toast('Este correo no tiene tabla');
+  try {
+    const w = tb.offsetWidth, h = tb.offsetHeight, k = 2, c = tb.cloneNode(true); c.style.width = w + 'px';
+    const xml = new XMLSerializer().serializeToString(c);
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${w*k}" height="${h*k}" viewBox="0 0 ${w} ${h}"><foreignObject width="100%" height="100%">${xml}</foreignObject></svg>`;
+    const img = new Image(); img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg); await img.decode();
+    const cv = document.createElement('canvas'); cv.width = w*k; cv.height = h*k; const cx = cv.getContext('2d');
+    cx.fillStyle = '#fff'; cx.fillRect(0, 0, cv.width, cv.height); cx.drawImage(img, 0, 0);
+    const blob = await new Promise(r => cv.toBlob(r, 'image/png'));
+    await navigator.clipboard.write([new ClipboardItem({'image/png': blob})]); toast('Imagen copiada');
+  } catch { toast('No se pudo copiar como imagen'); }
+}
+
+/* Markdown mínimo: **negrita**, *cursiva*, `código`, listas "- ", citas "> ", párrafos */
+function md(src){
+  const inl = t => t.replace(/\*\*(.+?)\*\*/g, '<b>$1</b>').replace(/\*(.+?)\*/g, '<i>$1</i>').replace(/`(.+?)`/g, '<code>$1</code>');
+  let out = '', para = [], ul = false;
+  const flush = () => { if (para.length) { out += '<p>' + para.map(inl).join('<br>') + '</p>'; para = []; } if (ul) { out += '</ul>'; ul = false; } };
+  for (const l of esc(src).split('\n')) {
+    if (!l.trim()) flush();
+    else if (/^- /.test(l)) { if (para.length) flush(); if (!ul) { out += '<ul>'; ul = true; } out += '<li>' + inl(l.slice(2)) + '</li>'; }
+    else if (/^&gt; /.test(l)) { flush(); out += '<div class="banner">' + inl(l.slice(5)) + '</div>'; }
+    else { if (ul) flush(); para.push(l); }
+  }
+  flush(); return phHtml(out);
+}
+
+/* ================= PLANTILLAS ================= */
+const SEV = ['Critica','Alta','Media','Baja'];
+const sevBox = s => SEV.map(x => `${x === s ? '☒' : '☐'}${x}`).join(' ');
+// F(clave, etiqueta, [opciones] | {o,d} | valorPorDefecto). Se limpian [] en claves que empiezan con ip/host
+const F = (k, l, x) => ({k, l, df: /^(ip|host)/.test(k), ...(Array.isArray(x) ? {o: x} : (x && typeof x === 'object') ? x : x !== undefined ? {d: x} : {})});
+const SEVF = d => F('sev', 'Severidad', {o: SEV, d});
+const TIPO = F('tipo', 'Interno / Externo', ['Externo','Interno']);
+const PERSONA = [F('usuario','Usuario ejecutor'), F('nombre','Nombre de usuario'), TIPO, F('cargo','Cargo'), F('empresa','Empresa'), F('jefe','Jefe')];
+
+/* Docs: "## X" = encabezado | "### (n)" = sección con botón Copiar (copia solo el cuerpo, en markdown) */
+const ficha = `**Usuario {{tipo}}**
+**Nombre:** {{nombre}}
+**Cargo:** {{cargo}}
+**Empresa:** {{empresa|N/A}}
+**Jefe Directo:** {{jefe}}`;
+const cierreAut = `### (2)
+**Autorización para cierre:** Se da Vo.Bo. para el cierre del caso por parte de Supervisión [Nombre].`;
+
+const abcDoc = ctx => `### (1)
+**Descripción del evento:**
+Se detecta actividad de ABC de usuarios (Creación/Baja/Actualización) generada por el usuario: **{{usuario}}** ({{nombre}} - {{cargo}}) en ${ctx}: **{{alerta}}**, con afectación al usuario: **{{afectado}}**; se inicia validación del evento.
+### (2)
+**Validación del evento:**
+Se realiza la validación del usuario
+- **Webphone:** Validación de los datos del usuario
+
+${ficha}
+### (3)
+**Notificación:** Se contacta al usuario **{{nombre}}** para validar el cambio del alertamiento.
+### (4)
+*(en caso de aplicar)*
+**Seguimiento:** Se envía correo de seguimiento solicitando respuesta al usuario del evento notificado previamente.
+### (5)
+**Validación de la respuesta:** Se recibe respuesta por parte de {{nombre}} indicando [detalle de la respuesta].
+
+*En caso de ser justificada la actividad...*
+- Si hay folio: Validar con TII
+- Si no hay folio: Validar con AU
+
+*Teniendo las validaciones pasar a tarea de cierre... No validado, escalar TII.*
+## CIERRE
+### (1)
+**Conclusión:** {{nombre}} confirma que el movimiento **(Alta/baja/cambio)** corresponde a una actividad válida debido a **[detalle de la actividad]**. Por lo anterior se procede al cierre del caso.
+${cierreAut}`;
+
+const abc = (ctx, title, extra, rows) => ({
+  fields: [F('fecha','Fecha'), F('alerta','Alerta'), F('normativa','Normativa'), ...PERSONA, SEVF('Alta'), F('mov','Tipo de movimiento'), F('afectado','Usuario afectado'), ...extra],
+  title,
+  mail: {
+    intro: `{{greet}},<br><br>Les notificamos que se ha realizado un cambio en ${ctx} <b>{{alerta}}</b>, este movimiento fue realizado por el usuario <b>{{usuario}}</b> afectando la cuenta <b>{{afectado}}</b> realizando un <b>{{mov}}</b>. Para fines de validación, <b>solicitamos</b> su apoyo compartiendo la justificación de la actividad mediante el folio de <b>REQ/CHG/INC</b> que respalde su ejecución.<br><br>Adjuntamos detalle del evento:`,
+    rows: [['Severidad','@sev'],['Tipo de amenaza:','<b>{{alerta}}</b>'],['Normativa:','{{normativa|N/A}}'],['Fecha:','{{fecha}}'],
+      ['Usuario ejecutor:','{{usuario}}','Nombre de Usuario:','{{nombre}}'],['Usuario afectado:','{{afectado}}','Tipo de movimiento:','{{mov}}'], ...rows]
+  },
+  doc: abcDoc(ctx)
+});
+
+const TEMPLATES = {
+  'VPN': {
+    fields: [F('modo','Enterprise / Mobile',['Enterprise','Mobile']), F('alerta','Alerta'), F('normativa','Normativa'), F('fecha','Fecha'), F('ipo','Src IP'), F('ipd','Dest IP'), F('pais','País','México'), TIPO,
+      F('usuario','User'), F('nombre','Nombre'), F('empresa','Compañía'), F('jefe','Jefe')],
+    title: ['{{alerta}}_{{usuario}}_{{ipo}}'],
+    names: ['Cisco_Talos_{{ipo}}','IBM_X_Force_{{ipo}}','Virus_Total_{{ipo}}','WEBPHONE_{{usuario}}'],
+    doc: `### (1)
+**Descripción del evento:**
+Se detecta conexión del usuario **{{usuario}}**, mediante VPN {{modo}} con IP origen: **{{ipo}}** correspondiente al país {{pais}} con destino **{{ipd}}**; se inicia validación del evento.
+### (2)
+**Validación del evento:**
+Se realiza el análisis de la IP de origen **{{ipo}}** mediante distintas fuentes de inteligencia:
+- **VirusTotal:** Validación de reputación de la IP, sin detecciones maliciosas reportadas.
+- **IBM X-Force Exchange:** Consulta de reputación y contexto de la IP, sin indicadores de actividad maliciosa.
+- **Cisco Talos:** Validación de reputación y geolocalización, identificándose la IP como ubicada en {{pais}}.
+- **Webphone:** Validación de los datos del usuario.
+
+**Usuario {{tipo}}**
+**Nombre:** {{nombre}}
+**Compañía:** {{empresa}}
+**Jefe Directo:** {{jefe}}
+### (3)
+**Validación de excepciones**
+*(En caso de que no exista acuerdo de excepción)*
+Se consulta el registro de excepciones vigente, sin identificar algún acuerdo o excepción asociado al evento.
+
+*(En caso de excepción)*
+Se consulta el registro de excepciones vigente, identificando que existe un acuerdo operativo autorizado para excepción.
+### (4)
+**Notificación:** Se contacta al usuario **{{usuario}}** para validar la conexión de la VPN y su ubicación.
+### (5)
+**Seguimiento:** Se envía correo de seguimiento solicitando respuesta al usuario del evento notificado previamente. *(en caso de aplicar)*
+### (6)
+**Validación de la respuesta:** Se recibe respuesta por parte del [Usuario/Jefe] indicando [reconoce/no reconoce] la actividad.
+
+*En caso de no reconocer la actividad...*
+- Derivado de la validación realizada, el [usuario/jefe] indica no reconocer la conexión, en consecuencia el evento se considera de riesgo, por lo que se procede a la aplicación de las medidas de contención correspondientes.
+- Solicitar los bloqueos con las áreas correspondientes... y documentar acciones.`
+  },
+
+  'ACPS': {
+    fields: [F('fecha','Fecha'), F('alerta','Alerta'), F('normativa','Normativa'), F('usuario','Usuario ejecutor'), F('nombre','Nombre usuario'), F('priv','Usuario privilegiado','admin'),
+      TIPO, F('cargo','Cargo'), F('empresa','Empresa'), F('jefe','Jefe'), F('ipo','IP origen'), F('ipd','IP destino'), SEVF('Alta')],
+    title: ['Case ####_[Tecnología]: Accesos de cuentas privilegiadas_{{usuario}}_{{ipd}}', '{{alerta}}_{{usuario}}', '{{alerta}}_{{usuario}}_{{ipd}}'],
+    note: '**ATENCIÓN:** En el caso específico del usuario `s14275` (alerta `VDI_USUARIOS:ACPS`, IP Origen: `201.130.47.32`), se deberá cerrar como **FALSO POSITIVO**.',
+    mail: {
+      intro: `{{greet}},<br><br>Le notificamos que se ha realizado un acceso con la cuenta privilegiada <b>{{priv}}</b>. Para fines de validación, <b>solicitamos</b> de su apoyo compartiendo la justificación de la actividad mediante el folio <b>REG/CHG/INC</b> que respalde su ejecución.<br><br>Adjuntamos detalle del evento:`,
+      rows: [['Severidad','@sev'],['Tipo de amenaza:','<b>{{alerta}}</b>'],['Normativa:','{{normativa|N/A}}'],['Fecha:','{{fecha}}'],
+        ['Usuario ejecutor:','{{usuario}}','Nombre de Usuario:','{{nombre}}'],['Usuario privilegiado:','{{priv}}'],['IP origen interna:','{{ipo}}','IP destino:','{{ipd}}']]
+    },
+    doc: `### (1)
+**Descripción del evento:**
+Se detecta evento por acceso a cuenta privilegiada al elemento **{{alerta}}** con IP origen interna **{{ipo}}**, realizado por el usuario {{usuario}} {{nombre}} con el usuario privilegiado **{{priv}}**. Se inicia la validación del evento.
+### (2)
+Se realiza la validación del usuario
+- **Webphone:** Validación de los datos del usuario
+
+${ficha}
+### (3)
+**Notificación:** Se realiza notificación al usuario ejecutor identificado para validación y justificación del acceso detectado.
+### (4)
+**Seguimiento:** [Indicar cualquier información respecto a la atención del evento en proceso]
+### (5)
+**Validación de la respuesta:** Se recibe respuesta por parte de {{nombre}} indicando [detalle de la respuesta].
+
+*En caso de ser justificada la actividad... Si hay folio: Validar con TII*
+### (6) Respuesta válida
+**Justificación:** El usuario confirma y justifica la actividad notificada, se adjunta el folio de respaldo de la actividad [Folio] y se determina como evento legítimo por lo que se procede al cierre del caso.
+### (6) Respuesta no válida
+**Justificación:** No se cuenta con una justificación válida con respecto al acceso a la cuenta privilegiada, por lo que se escala con el equipo de Tier II para su seguimiento.
+
+*Teniendo las validaciones pasar a tarea de cierre... No validado, escalar TII.*
+## CIERRE
+### (7)
+**Conclusión:** Se confirmó que el evento corresponde a una actividad legítima autorizada por parte del usuario.
+### (8)
+**Aprobación:** Se da Vo.Bo. para el cierre del caso por parte de Supervisión [Nombre].`
+  },
+
+  'App abc': abc('la aplicación', ['Case ####_[Aplicación]: ABC_Usuarios_{{host}}', '{{alerta}}: ABC de Usuarios_{{usuario}}_{{host}}'], [F('host','Host origen')], [['Hostname origen:','{{host}}']]),
+  'DB abc': abc('la base de datos', ['Case ####_Base de Datos: ABC Usuarios_{{host}}', '{{alerta}}_{{usuario}}_{{host}}'],
+    [F('host','Host'), F('objeto','Tipo de objeto'), F('usoso','Usuario de SO')], [['Host:','{{host}}'],['Usuario de SO:','{{usoso}}','Tipo de objeto:','{{objeto}}']]),
+  'SO abc': abc('el hostname', ['Case ####_[SO]: ABC_Usuarios_{{host}}'], [F('host','Hostname')], [['Hostname:','{{host}}']]),
+  'NE abc': abc('el elemento de red', ['Case ####_[NE]: ABC Usuarios_{{usuario}}_{{host}}'], [F('host','Hostname/IP origen'), F('hostd','Hostname/IP destino')], [['Hostname/IP origen:','{{host}}','Hostname/IP destino:','{{hostd}}']]),
+
+  'Interrupción de Eventos': {
+    fields: [F('alerta','Alerta / tecnología'), F('host','Host')],
+    title: ['Case ####_Interrupción de eventos [TECNOLOGIA]', 'Interrupcion de eventos: {{alerta}}_{{host}}'],
+    mail: {
+      intro: `{{greet}} @SIEM Infrastructure Security,<br><br>Hemos recibido una alerta de Interrupción de eventos en la tecnología <b>{{alerta}}</b>, por lo que solicitamos de su apoyo para indicarnos si existió pérdida de logs durante el periodo del evento, así como la condición actual del Host <b>{{host}}</b>.<br><br>En caso de que se determine que la alerta no corresponde a una falla relacionada a la plataforma de Splunk, solicitamos nos indique la causa relacionada de acuerdo con su análisis realizado.`,
+      rows: [], outro: '[Adjuntar evidencia del detalle de la alerta que abarque la pantalla completa que muestre la fecha y hora del sistema]'
+    },
+    doc: `### (1)
+**Descripción del evento:**
+Se recibe alerta por interrupción en la recepción de eventos provenientes del host **{{host}}**, correspondiente a la tecnología **{{alerta}}**.
+Se inicia validación para confirmar estado de conectividad, funcionamiento del agente/servicio.
+### (2)
+**Notificación:**
+Se notifica al equipo del SIEM con respecto a la interrupción de eventos en la tecnología **{{alerta}}**, en espera de confirmación.
+### (3)
+**Seguimiento:** Se envía correo de seguimiento solicitando respuesta del evento notificado previamente. *(en caso de aplicar)*
+### (4)
+*(RESPUESTA VÁLIDA ÚNICAMENTE SI SE RECIBE EVIDENCIA DE LA RECUPERACIÓN DE LA INGESTA DE LOGS O DE ELEMENTO DE BAJA TRANSACCIONALIDAD)*
+
+**Validación de la respuesta:**
+**VERDADERO: OP 1_ (RECUPERACIÓN)**
+- **Con recuperación:** Se recibe evidencia por parte del SIEM confirmando la recuperación del flujo de eventos desde **{{host}}** (**{{alerta}}**).
+- **Sin recuperación:** No se recibe evidencia que confirme la recuperación del flujo de eventos. Se procede a escalar el caso al equipo Tier II para análisis técnico y seguimiento.
+## CIERRE
+### (1)
+**Conclusión:** Ingesta normalizada y validada sin afectación activa.
+${cierreAut}`
+  },
+
+  'Dados de baja': {
+    fields: [F('alerta','Alerta'), F('normativa','Normativa'), F('fecha','Fecha alerta'), F('fbaja','Fecha baja'), F('attuid','ATTUID'), F('nombre','Nombre de usuario'),
+      F('tipo','Interno / Externo',['Externo','Interno','No identificado']), F('cargo','Cargo'), F('host','Origen / host'), F('accion','Acción','LOGIN'), SEVF('Critica')],
+    title: ['{{alerta}}_{{attuid}}'],
+    mail: {
+      intro: `{{greet}}, @MX CERT Monitoreo Seguridad<br><br>Hemos detectado una <b>{{alerta}}</b> con el usuario <b>{{attuid}} - {{nombre}}</b><br><br>Adjuntamos detalle del evento:`,
+      rows: [['Severidad','@sev'],['Tipo de amenaza:','<b>{{alerta}}</b>'],['Normativa:','{{normativa|N/A}}'],['Fecha alerta:','{{fecha}}'],['Fecha de baja:','{{fbaja}}'],['Usuario:','{{tipo}}'],
+        ['ATTUID:','{{attuid}}','Nombre de Usuario:','{{nombre}}'],['Origen / host:','{{host}}','Acción:','{{accion}}']],
+      outro: 'Se anexa evidencia de VerifyID:<br><br><br>Se anexa evidencia de WEBPHONE:<br><br><br>Quedo pendiente a sus comentarios<br>Saludos'
+    },
+    doc: `### (1)
+**Descripción del evento:**
+Se identifica alertamiento de conexión vinculada a un usuario dado de baja de la institución hacia la aplicación **{{host|aplicación}}**.
+Se inicia la validación del evento.
+
+**Usuario:** {{attuid}}
+**Nombre:** {{nombre}}
+### (2)
+**Notificación:**
+Se notifica y escala al equipo de TIER II para validación y atención del evento.`
+  },
+
+  'Brute Force .25': {
+    fields: [F('fecha','Fecha'), F('alerta','Alerta'), F('normativa','Normativa'), F('ipo','IP origen'), F('ipd','IP destino'), F('servicios','Servicios identificados'), F('intentos','Cantidad de intentos'), SEVF('Alta')],
+    title: ['Case ####_[Tecnología]: Brute Force T1110.25_{{ipo|Origen o "Múltiples IPs"}}'],
+    mail: {
+      intro: `{{greet}}, <b>Seguridad Perimetral / IP Core / CSO Infraestructura</b><br><br>Solicitamos su apoyo para la atención del incidente <b>[#Folio de incidente]</b> ejecutando las acciones de contención pertinentes.<br>Anexamos detalle del análisis:`,
+      rows: [['Severidad','@sev'],['Tipo de amenaza:','<b>{{alerta}}</b>'],['Normativa:','<b>{{normativa|N/A}}</b>'],['Fecha:','{{fecha}}'],['Servicio(s) identificado:','{{servicios}}'],
+        ['IP origen:','{{ipo}}','IP destino:','{{ipd}}'],['Cantidad de intentos:','{{intentos}}']],
+      outro: '<b>[Adjuntar .xls con análisis]</b><br>Quedo pendiente de su respuesta<br>Saludos'
+    },
+    doc: ''   // el HTML original solo decía "REVISAR DOCUMENTACION"
+  },
+
+  'Brute Force (.30/.50/.100)': {
+    fields: [F('fecha','Fecha'), F('alerta','Alerta'), F('normativa','Normativa'), F('usuario','Usuario'), F('nombre','Nombre usuario'), TIPO, F('ipo','IP origen interna'), F('ipd','IP destino interna'), SEVF('Alta')],
+    title: ['Case ####_ Brute Force (T1110.50 / T1110.100)_{{usuario}}_{{ipo}}', '{{alerta}}_{{usuario}}', '{{alerta}}_{{usuario}}_{{ipo}}'],
+    mail: {
+      intro: `{{greet}},<br><br>Se han identificado múltiples intentos fallidos de acceso asociados a su cuenta de usuario <b>{{usuario}}</b>, por lo cual necesitamos que nos confirme si dichos intentos fueron realizados por usted.<br><br>Nota: Si no reconoce la conexión es probable su usuario esté siendo utilizado en algún proceso que se ejecuta automáticamente. <b>Solicitamos</b> su apoyo para revisar la IP(s) que se detallan en la siguiente tabla.`,
+      rows: [['Severidad','@sev'],['Tipo de amenaza:','<b>{{alerta}}</b>'],['Normativa:','<b>{{normativa|N/A}}</b>'],['Fecha:','{{fecha}}'],
+        ['Usuario:','{{usuario}}','Nombre de Usuario:','{{nombre|N/A}}'],['IP origen interna:','{{ipo|N/A}}','IP destino interna:','{{ipd|N/A}}']],
+      outro: '<b>Se adjunta concentrado del total de IP(s) vistas en el alertamiento.</b><br>Se anexa mayor detalle a continuación:<br>Quedo pendiente a sus comentarios<br>Saludos'
+    },
+    doc: `## 2do. Escenario: más de 30 intentos en un minuto y/o 50 intentos en una hora desde una IP interna
+### (1)
+**Descripción del evento:**
+Se recibe alerta por múltiples intentos fallidos de autenticación [+30 intentos en un minuto o 50 en 1 hora] detectados sobre el elemento **{{alerta}}** desde la IP interna origen **{{ipo}}**. Se inicia la validación del evento.
+### (2)
+**Validación de usuario:** Se realiza la validación del usuario determinando que se trata de una cuenta:
+
+**Usuario {{tipo}}**
+**Cuenta de servicio:** {{usuario}}
+### (3)
+**Notificación:** Se notifica al usuario ejecutor acerca del evento para validación de la actividad.
+### (4)
+**Respuesta del usuario:** [detalle de la respuesta]
+### (5) Respuesta válida
+**Validación de respuesta:** Se valida directamente con el usuario la actividad reportada, quien confirma que corresponde a acciones legítimas derivadas de: [FOLIO DE LA actividad/detalle]. No se evidencian anomalías adicionales. En virtud de lo anterior, se determina cierre sin afectación de seguridad.
+### (5) Respuesta no válida
+**Validación de respuesta:** Actividad no justificada y sin folio de respaldo. Se mantiene caso en seguimiento y se escala al equipo de Tier II para definición de acciones.`
+  },
+
+  'Table Space': {
+    fields: [F('fecha','Fecha'), F('bd','Base(s) de datos'), F('desc','Descripción (tablespace)'), F('valor','Valor'), F('warning','Warning','85%'), F('error','Error','90%'), SEVF('Critica')],
+    title: ['Reporte Tablespaces Seguridad | {{bd}}'],
+    mail: {
+      intro: `{{greet}} @MX CERT Monitoreo Seguridad,<br><br><b>En proceso atención</b><br><br>Solicitamos de su apoyo para la revisión y acciones para disminuir el almacenamiento de la Base de Datos <b>{{bd}}</b>, más detalle en la siguiente tabla.`,
+      rows: [['Severidad','@sev'],['Tipo de amenaza:','<b>Reporte Tablespaces Seguridad /BD {{bd}}</b>'],['Normativa:','N/A'],['Fecha:','{{fecha}}'],
+        ['Base de Datos:','{{bd}}','Descripción:','{{desc}}'],['Warning:','{{warning}}','Error:','{{error}}'],['Valor:','{{valor}}'],['!','Evidencia']],
+      outro: 'Quedamos pendientes a sus comentarios<br>Saludos'
+    },
+    doc: `Se realiza el análisis de los campos involucrados en esta alerta.
+
+- **Descripción del evento/Incidente:** Se recibe alertamiento de Reporte Tablespaces Seguridad | {{bd}}
+- **Impacto/Potencial:** ALTA.
+- **Reportado a:** TIER II
+- **Hallazgos:** Se observa la database {{bd}}
+- **Retroalimentación:** Se crea caso para notificación de alertamiento, se notifica y escala al equipo de TIER II
+
+Se notifica y escala al equipo de TIER II, se adjunta evidencia.`
+  }
+};
+
+/* ================= estado ================= */
+let state = store.get('pvn2', {tpl: 'VPN', greet: 'Buenos días', data: {}});
+if (!TEMPLATES[state.tpl]) state.tpl = Object.keys(TEMPLATES)[0];
+const sel = $('#tpl');
+sel.innerHTML = Object.keys(TEMPLATES).map(n => `<option>${esc(n)}</option>`).join('');
+sel.value = state.tpl; $('#greet').value = state.greet;
+const save = () => store.set('pvn2', state);
+
+function values(){
+  const v = {greet: state.greet}, d = state.data[state.tpl] || {};
+  TEMPLATES[state.tpl].fields.forEach(f => v[f.k] = d[f.k] ?? f.d ?? (f.o ? f.o[0] : ''));
+  return v;
+}
+
+/* limpia [] conservando la posición del cursor */
+function cleanInput(el){
+  const c = defang(el.value); if (c === el.value) return false;
+  const before = el.value.slice(0, el.selectionStart), pos = defang(before).length;
+  el.value = c; el.setSelectionRange(pos, pos); return true;
+}
+
+function buildForm(){
+  const t = TEMPLATES[state.tpl], v = values();
+  $('#form').innerHTML = t.fields.map(f => `<div><label>${esc(f.l)}</label>` + (f.o
+    ? `<select data-k="${f.k}">${f.o.map(o => `<option ${o === v[f.k] ? 'selected' : ''}>${esc(o)}</option>`).join('')}</select>`
+    : `<input data-k="${f.k}" ${f.df ? 'data-defang' : ''} value="${esc(v[f.k])}">`) + '</div>').join('');
+  $('#form').querySelectorAll('[data-k]').forEach(el => el.addEventListener('input', () => {
+    if (el.hasAttribute('data-defang')) cleanInput(el);
+    (state.data[state.tpl] ||= {})[el.dataset.k] = el.value; save(); render();
+  }));
+  render();
+}
+
+/* ================= render ================= */
+let docChunks = [];   // texto markdown crudo de cada sección, para copiar
+function mailHtml(t, v){
+  const m = t.mail; if (!m) return '';
+  const TH = 'style="background:#00a8e0;color:#fff;border:2px solid #000;padding:5px"', TD = 'style="border:2px solid #000;padding:5px;color:#000;background:#fff"';
+  const rows = m.rows.map(r => r[0] === '!' ? `<tr><th ${TH} colspan="4">${r[1]}</th></tr>`
+    : r.length === 2 ? `<tr><th ${TH}>${r[0]}</th><td ${TD} colspan="3">${r[1] === '@sev' ? `<b>${sevBox(v.sev)}</b>` : fill(r[1], v, true)}</td></tr>`
+    : `<tr><th ${TH}>${r[0]}</th><td ${TD}>${fill(r[1], v, true)}</td><th ${TH}>${r[2]}</th><td ${TD}>${fill(r[3], v, true)}</td></tr>`).join('');
+  const table = rows ? `<table style="border-collapse:collapse;border:2px solid #000;text-align:center;width:100%;font-family:Arial,sans-serif"><thead><tr><th ${TH} colspan="4">Detalle del evento</th></tr></thead><tbody>${rows}</tbody></table>` : '';
+  const outro = m.outro ?? 'Se anexa mayor detalle a continuación:<br><br>Quedo pendiente a sus comentarios<br>Saludos';
+  return phHtml(`<div style="font-family:Arial,sans-serif;color:#000"><p>${fill(m.intro, v, true)}</p>${table}<p>${outro}</p></div>`);
+}
+function docHtml(t, v){
+  docChunks = [];
+  const full = fill(t.doc, v, false); if (!full.trim()) return '<p class="hint">Esta plantilla no tiene documentación definida.</p>';
+  let html = `<h2>Documentación y cierre (markdown) <button class="mini" data-cpdoc="all">Copiar todo</button></h2>`;
+  if (t.note) html += md(`> ${t.note}`);
+  full.split(/^(?=#{2,3} )/m).forEach(ch => {
+    const [first, ...rest] = ch.split('\n');
+    if (first.startsWith('## ')) { html += `<h2 class="md">${phHtml(esc(first.slice(3)))}</h2>`; return; }
+    const hasH = first.startsWith('### '), body = (hasH ? rest.join('\n') : ch).trim(), i = docChunks.push(plain(body)) - 1;
+    html += `<div class="sec-h"><h3>${hasH ? phHtml(esc(first.slice(4))) : ''}</h3><button class="mini" data-cpdoc="${i}">Copiar</button></div><div class="box">${md(body)}</div>`;
+  });
+  docChunks.all = plain(full);
+  return html;
+}
+function render(){
+  const t = TEMPLATES[state.tpl], v = values();
+  const titles = t.title.map(x => plain(fill(x, v, false)));
+  const names = t.names ? `<h2>Para nombrar (evidencias)</h2><div class="box">${t.names.map(x => esc(plain(fill(x, v, false)))).join('<br>')}</div>` : '';
+  $('#out').innerHTML =
+    `<h2>Sugerencia de título <button class="mini" data-cptext="${esc(titles.join('\n'))}">Copiar</button></h2><div class="box">${titles.map(esc).join('<br>')}</div>` + names +
+    (t.mail ? `<h2>Correo <span><button class="mini" data-cp="mail">Copiar</button> ${t.mail.rows.length ? '<button class="mini sec" data-cpimg="mail">Copiar tabla como imagen</button>' : ''}</span></h2><div class="mailwrap" id="mail">${mailHtml(t, v)}</div>` : '') +
+    docHtml(t, v);
+}
+
+/* ================= eventos ================= */
+document.addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return;
+  if (b.dataset.cp) { const el = document.getElementById(b.dataset.cp); el.tagName === 'CODE' ? copyText(el.textContent) : copyHtml(el); }
+  else if (b.dataset.cpimg) copyImage(document.getElementById(b.dataset.cpimg));
+  else if (b.dataset.cpdoc) copyText(docChunks[b.dataset.cpdoc]);
+  else if (b.dataset.cptext !== undefined) copyText(b.dataset.cptext);
+});
+sel.onchange = () => { state.tpl = sel.value; save(); buildForm(); };
+$('#greet').onchange = e => { state.greet = e.target.value; save(); render(); };
+$('#clear').onclick = () => { state.data[state.tpl] = {}; save(); buildForm(); };
+
+function gen(){ const a = $('#g_a').value.trim() || 'N/A', u = $('#g_u').value.trim() || 'N/A', i = $('#g_i').value.trim() || 'N/A';
+  $('#g1').textContent = `${a}_${u}_${i}`; $('#g2').textContent = `${a}_${u}`; }
+['g_a','g_u','g_i'].forEach(id => $('#' + id).addEventListener('input', e => { if (e.target.hasAttribute('data-defang')) cleanInput(e.target); gen(); }));
+gen(); buildForm();
+</script>
+</body>
+</html>
